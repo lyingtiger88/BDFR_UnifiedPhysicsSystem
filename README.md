@@ -1,19 +1,29 @@
+<p align="center">
+  <img src="Docs/Images/bdfr-unified-physics-banner.webp" alt="BDFR Unified Physics System - real-time crash deformation showcase" width="100%">
+</p>
+
 # BDFR Unified Physics System
 
-**BDFR Unified Physics System** is a modular, multi-backend physics framework for Unreal Engine.
+**BDFR Unified Physics System** is a modular multi-backend physics framework for Unreal Engine focused on real-time simulation, collision response, deformation, damage, and extensible physics backends.
 
-The project is designed around a unified physics API so gameplay systems can use different physics backends without being tightly coupled to a single solver.
+The project is designed around a unified API so gameplay systems can use **Chaos**, **Bullet Physics**, hybrid simulation, or future custom solvers without being tightly coupled to one physics engine.
 
-## Goals
+## Project Vision
+
+The long-term goal is to provide a scalable physics layer for Unreal Engine that can serve everything from ordinary rigid-body interaction to advanced vehicle crashes, runtime mesh deformation, structural damage, ragdolls, soft bodies, and specialized simulation systems.
+
+### Core goals
 
 - Support **Unreal Chaos** as a native backend.
 - Integrate **Bullet Physics** as an alternative runtime backend.
-- Support **Hybrid** simulations that route different systems to different backends.
+- Support **Hybrid** Chaos + Bullet workflows.
 - Keep gameplay-facing APIs backend-agnostic.
-- Allow future physics backends to be added without rewriting gameplay systems.
-- Provide scalable simulation quality for PC, console, and mobile targets.
+- Allow future physics backends to be added without rewriting gameplay code.
+- Provide fixed-step and substep simulation foundations.
+- Provide backend-neutral impact events for deformation, damage, audio, and gameplay.
+- Scale simulation quality across PC, console, and mobile targets.
 
-## Planned Architecture
+## Architecture
 
 ```text
 Unreal Engine
@@ -28,7 +38,7 @@ Unreal Engine
             |     +-- Chaos
             |     +-- Bullet
             |     +-- Hybrid
-            |     +-- Future custom backends
+            |     +-- Future Custom Backends
             |
             +-- Runtime Systems
                   +-- Rigid Bodies
@@ -43,7 +53,7 @@ Unreal Engine
 
 ## Backend Selection
 
-The framework is intended to support backend selection at multiple levels:
+The system is being designed to support backend selection at multiple levels:
 
 ```text
 Project Default
@@ -51,32 +61,89 @@ Project Default
         -> Actor / Component Override
 ```
 
-Initial backend modes:
+Current backend types defined by the core:
 
+- `Auto`
 - `Chaos`
 - `Bullet`
 - `Hybrid`
-- `Auto`
+- `None`
+
+`Auto` resolves to the best registered backend available to the runtime. Individual backend modules register factories with the core registry, keeping the core independent from Bullet- or Chaos-specific implementation details.
+
+## Current Implementation
+
+The repository now contains the first functional architecture layer:
+
+- Unreal plugin descriptor
+- `BDFRPhysicsCore` runtime module
+- `IBDFRPhysicsBackend` common backend interface
+- Backend registry and factory system
+- Per-world `FBDFRPhysicsRouter`
+- `UBDFRPhysicsWorldSubsystem`
+- Fixed timestep foundation
+- Configurable maximum substeps
+- Backend-neutral rigid-body handles and descriptors
+- Backend-neutral impact event structure
+- Project settings foundation
+
+The core deliberately does **not** include Bullet or Chaos implementation headers. Backend-specific modules will plug into the common interface.
 
 ## Live Mesh Deformation
 
-A dedicated deformation layer is planned to consume normalized impact data from any physics backend.
+Live deformation is a major planned feature of the framework.
 
-Planned deformation modes:
+The intended pipeline is:
+
+```text
+Bullet / Chaos / Future Backend
+              |
+        Collision Event
+              |
+     BDFR Impact Resolver
+              |
+      Stress / Energy Data
+              |
+   Live Mesh Deformation
+              |
+      Collision Update
+              |
+ Damage / Fracture / Gameplay
+```
+
+Planned deformation capabilities include:
 
 - Elastic deformation
 - Plastic deformation
 - Persistent dents
+- Impact-driven deformation
 - Explosion-driven deformation
-- Local collision updates
 - Material-dependent response
-- Stress accumulation
-- Fracture / structural failure
-- CPU and GPU deformation paths
+- Localized stress propagation
+- Adaptive collision rebuilding
+- CPU physical deformation
+- GPU visual deformation
+- Structural failure and fracture
 
-The deformation system will remain independent from Bullet or Chaos by consuming a common impact/event format.
+The deformation layer will consume the common `FBDFRPhysicsImpactEvent` format rather than depending directly on Chaos or Bullet collision callbacks.
 
-## Planned Plugin Modules
+## Vehicle Damage Direction
+
+One of the target use cases is physically driven vehicle damage:
+
+```text
+Impact
+  -> Body-panel deformation
+  -> Persistent dents / crushed geometry
+  -> Local collision changes
+  -> Suspension or wheel damage
+  -> Handling changes
+  -> Structural failure at extreme loads
+```
+
+This allows damage to become part of the simulation instead of remaining purely visual.
+
+## Planned Modules
 
 ```text
 BDFR_UnifiedPhysicsSystem/
@@ -93,10 +160,12 @@ BDFR_UnifiedPhysicsSystem/
 +-- ThirdParty/
 |   +-- Bullet/
 |
++-- Docs/
+|   +-- Images/
+|
 +-- Config/
 +-- Content/
 +-- Resources/
-+-- Docs/
 +-- Examples/
 +-- Tests/
 ```
@@ -104,54 +173,87 @@ BDFR_UnifiedPhysicsSystem/
 ## Development Roadmap
 
 ### Phase 1 — Foundation
-- Plugin descriptor
-- Core runtime module
-- `IPhysicsBackend` abstraction
-- Physics Router
-- Project settings
-- Backend lifecycle
+
+- [x] Plugin descriptor
+- [x] Core runtime module
+- [x] `IBDFRPhysicsBackend` abstraction
+- [x] Backend registry
+- [x] Physics Router
+- [x] World subsystem
+- [x] Project settings foundation
+- [x] Fixed timestep / substep foundation
+- [x] Backend-neutral impact event
 
 ### Phase 2 — Bullet Integration
-- Bullet third-party build integration
-- Bullet world management
-- Rigid bodies
-- Collision shapes
-- Forces and impulses
-- Fixed timestep and substepping
-- Debug rendering
 
-### Phase 3 — Constraints and Interaction
-- Fixed, hinge, slider, cone-twist, and 6DOF constraints
-- Collision/contact events
-- Queries and traces
-- Sleeping / activation controls
-- Continuous collision detection
+- [ ] Bullet third-party build integration
+- [ ] Bullet world management
+- [ ] Unit and coordinate conversion layer
+- [ ] Rigid bodies
+- [ ] Collision shapes
+- [ ] Forces and impulses
+- [ ] Fixed-step Bullet simulation
+- [ ] Debug rendering
 
-### Phase 4 — Hybrid Backend
-- Chaos/Bullet routing
-- Kinematic proxy bridge
-- Cross-backend event synchronization
-- Per-system backend assignment
+### Phase 3 — Constraints & Interaction
 
-### Phase 5 — Deformation and Damage
-- Impact resolver
-- Material response
-- Elastic/plastic deformation
-- Explosion deformation
-- Adaptive collision rebuilding
-- Structural damage and fracture
+- [ ] Fixed constraints
+- [ ] Hinge constraints
+- [ ] Slider constraints
+- [ ] Cone-twist constraints
+- [ ] 6DOF constraints
+- [ ] Collision/contact events
+- [ ] Queries and traces
+- [ ] Sleeping / activation controls
+- [ ] Continuous collision detection
+
+### Phase 4 — Chaos & Hybrid Routing
+
+- [ ] Chaos backend wrapper
+- [ ] Hybrid backend
+- [ ] Per-system backend assignment
+- [ ] Kinematic proxy bridge
+- [ ] Cross-backend event synchronization
+
+### Phase 5 — Deformation & Damage
+
+- [ ] Impact resolver
+- [ ] Deformable material model
+- [ ] Elastic deformation
+- [ ] Plastic deformation
+- [ ] Persistent dents
+- [ ] Explosion deformation
+- [ ] Adaptive collision rebuilding
+- [ ] Structural damage
+- [ ] Fracture
 
 ### Phase 6 — Advanced Simulation
-- Vehicle physics
-- Ragdolls
-- Soft bodies
-- Performance tiers
-- Multithreaded / async simulation
-- Deterministic-mode investigation
+
+- [ ] Vehicle physics integration
+- [ ] Ragdolls
+- [ ] Soft bodies
+- [ ] CPU/GPU deformation quality tiers
+- [ ] Multithreaded simulation
+- [ ] Async simulation
+- [ ] Deterministic-mode investigation
+- [ ] PC / Console / Mobile profiles
+
+## Example Use Cases
+
+- Advanced vehicle crash simulation
+- Runtime body-panel deformation
+- Impact and explosion damage
+- Physics-driven environmental props
+- Ragdolls and physical interaction
+- Structural failure systems
+- Hybrid Chaos/Bullet projects
+- Advanced Unreal Engine simulation plugins
 
 ## Status
 
-Early development / architecture foundation.
+**Early development — core architecture established.**
+
+The next major milestone is the first real **Bullet Physics backend**, including Bullet world creation, rigid-body creation, collision shapes, forces/impulses, stepping, and Unreal/Bullet transform conversion.
 
 ## License
 
