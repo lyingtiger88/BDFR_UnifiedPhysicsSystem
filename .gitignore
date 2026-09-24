@@ -1,0 +1,31 @@
+# Unreal Engine
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+
+# IDE / generated project files
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+.vscode/
+.idea/
+
+# Build products
+*.pdb
+*.obj
+*.dll
+*.lib
+*.exp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local plugin packaging
+Package/
+Packaged/

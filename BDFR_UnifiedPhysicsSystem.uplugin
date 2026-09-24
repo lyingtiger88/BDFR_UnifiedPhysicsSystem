@@ -1,0 +1,19 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0-dev",
+  "FriendlyName": "BDFR Unified Physics System",
+  "Description": "A modular multi-backend physics framework for Unreal Engine supporting Chaos, Bullet Physics, hybrid simulation, and extensible custom physics backends.",
+  "Category": "Physics",
+  "CreatedBy": "BDFR",
+  "CanContainContent": true,
+  "IsBetaVersion": true,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "BDFRPhysicsCore",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault"
+    }
+  ]
+}
